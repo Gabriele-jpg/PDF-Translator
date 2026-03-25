@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>PDF Traduttore EN → IT</title>
+
+<!-- PWA + iOS -->
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PDF Traduttore">
+<meta name="theme-color" content="#0d1117">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--surface:#161b22;--border:#30363d;--border2:#21262d;
+  --text:#e6edf3;--muted:#7d8590;--blue:#388bfd;--blue-dim:#0d1f3a;
+  --blue-border:#1f4080;--blue-text:#79c0ff;
+  --green:#238636;--green2:#2ea043;--green3:#3fb950;
+  --green-dim:#0a2a0a;--green-border:#2ea043;
+  --red:#f85149;--yellow:#d29922;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+html{background:var(--bg)}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;min-height:100dvh;
+  padding: calc(28px + var(--safe-top)) 16px calc(60px + var(--safe-bottom));
+  font-size:15px;
+  -webkit-tap-highlight-color:transparent;
+  overscroll-behavior:none;
+}
+.wrap{max-width:720px;margin:0 auto}
+h1{font-size:22px;font-weight:700;margin-bottom:4px;letter-spacing:-.4px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:24px}
+.badge{display:inline-flex;align-items:center;gap:5px;background:#1a3a1a;border:1px solid var(--green2);border-radius:20px;padding:2px 10px;font-size:11px;color:var(--green3);font-weight:600;margin-left:8px;vertical-align:middle}
+
+/* install banner */
+.install-banner{display:none;background:var(--blue-dim);border:1px solid var(--blue-border);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px}
+.install-banner.show{display:flex;align-items:center;gap:10px}
+.install-banner .ib-icon{font-size:22px;flex-shrink:0}
+.install-banner .ib-text{flex:1;color:var(--text)}
+.install-banner .ib-text strong{display:block;margin-bottom:2px}
+.install-banner .ib-text span{color:var(--muted);font-size:12px}
+.install-banner .ib-close{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:14px}
+.card h2{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
+
+.drop{border:2px dashed var(--border);border-radius:8px;padding:40px 20px;text-align:center;cursor:pointer;position:relative;transition:.2s;-webkit-touch-callout:none}
+.drop:hover,.drop.over{border-color:var(--blue);background:var(--blue-dim)}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:16px}
+.drop p{font-weight:600;margin-bottom:4px}
+.drop span{font-size:12px;color:var(--muted)}
+
+/* iOS: mostra tasto "Sfoglia" più grande su mobile */
+@media(max-width:600px){
+  .drop{padding:28px 16px}
+  .drop p{font-size:14px}
+  .ios-hint{display:block!important}
+}
+.ios-hint{display:none;margin-top:8px;font-size:11px;color:var(--blue-text)}
+
+.fbadge{display:none;align-items:center;gap:10px;margin-top:10px;background:var(--blue-dim);border:1px solid var(--blue-border);border-radius:8px;padding:10px 14px}
+.fbadge.on{display:flex}
+.fbadge .name{font-weight:600;font-size:13px;flex:1;color:var(--blue-text);word-break:break-all}
+.fbadge .sz{font-size:11px;color:var(--muted);white-space:nowrap}
+.fbadge button{background:none;border:1px solid var(--blue-border);border-radius:5px;padding:4px 10px;font-size:12px;color:var(--blue-text);cursor:pointer;font-family:inherit;min-height:36px}
+
+.api-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.api-opt{display:flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;cursor:pointer;font-size:13px;transition:.15s;user-select:none;color:var(--muted);min-height:40px}
+.api-opt:active{border-color:var(--blue);color:var(--text)}
+.api-opt.sel{border-color:var(--blue);background:var(--blue-dim);color:var(--blue-text);font-weight:600}
+.api-note{font-size:11px;color:var(--muted)}
+
+.speed-row{display:flex;align-items:center;gap:12px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border2)}
+.speed-row label{font-size:12px;color:var(--muted);white-space:nowrap;min-width:130px}
+.speed-row input[type=range]{flex:1;accent-color:var(--blue);height:5px;cursor:pointer}
+.speed-val{font-size:13px;font-weight:700;color:var(--blue-text);min-width:60px;text-align:right;font-family:'DM Mono',monospace}
+
+.go{
+  width:100%;padding:16px;
+  background:var(--green);color:#fff;
+  border:none;border-radius:10px;
+  font-family:inherit;font-size:16px;font-weight:600;
+  cursor:pointer;transition:.2s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  min-height:54px;-webkit-appearance:none;
+  letter-spacing:-.2px;
+}
+.go:active:not(:disabled){background:var(--green2);transform:scale(.98)}
+.go:disabled{background:var(--border2);color:var(--muted);cursor:not-allowed}
+
+.prog-wrap{display:none;margin-top:18px}
+.prog-wrap.on{display:block}
+.prog-track{background:var(--border2);border-radius:99px;height:8px;overflow:hidden;margin-bottom:8px}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--green3));border-radius:99px;transition:width .3s ease;width:0}
+.prog-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:12px}
+.prog-meta b{color:var(--green3);font-family:'DM Mono',monospace}
+
+.stats-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat{background:var(--blue-dim);border:1px solid var(--blue-border);border-radius:8px;padding:8px 10px;text-align:center}
+.stat .sv{font-size:17px;font-weight:700;color:var(--blue-text);font-family:'DM Mono',monospace}
+.stat .sl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+
+.log{max-height:180px;overflow-y:auto;font-size:12px;display:flex;flex-direction:column;gap:2px;font-family:'DM Mono',monospace}
+.lr{display:flex;gap:7px;align-items:flex-start;padding:4px 0;border-bottom:1px solid var(--border2);color:var(--muted)}
+.lr.on{color:var(--text)}.lr.ok{color:var(--green3)}.lr.er{color:var(--red)}.lr.warn{color:var(--yellow)}
+.ld{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:var(--border);margin-top:3px}
+.lr.on .ld{background:var(--blue);animation:bl 1s infinite}
+.lr.ok .ld{background:var(--green3)}.lr.er .ld{background:var(--red)}.lr.warn .ld{background:var(--yellow)}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.2}}
+
+.dbg{display:none;margin-top:12px;background:#010409;border:1px solid var(--border2);border-radius:8px;padding:12px;font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);max-height:140px;overflow-y:auto}
+.dbg.on{display:block}
+.dbg .g{color:var(--green3)}.dbg .y{color:var(--yellow)}.dbg .r{color:var(--red)}
+
+.result{display:none;background:var(--green-dim);border:1px solid var(--green-border);border-radius:10px;padding:22px;text-align:center;margin-top:14px}
+.result.on{display:block}
+.result .ico{font-size:32px;margin-bottom:8px}
+.result h3{font-weight:700;color:var(--green3);margin-bottom:4px;font-size:18px}
+.result p{font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.5}
+.dl{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:13px 28px;background:var(--green);color:#fff;
+  border:none;border-radius:9px;font-family:inherit;
+  font-size:15px;font-weight:600;cursor:pointer;
+  transition:.2s;min-height:50px;-webkit-appearance:none;
+}
+.dl:active{background:var(--green2);transform:scale(.98)}
+.reset{display:block;margin:10px auto 0;background:none;border:none;font-family:inherit;font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;min-height:36px}
+
+#cv{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Banner installazione iOS -->
+  <div class="install-banner" id="installBanner">
+    <div class="ib-icon">📲</div>
+    <div class="ib-text">
+      <strong>Installa come app</strong>
+      <span>Tocca <b>⎋ Condividi</b> → <b>Aggiungi alla schermata Home</b></span>
+    </div>
+    <button class="ib-close" onclick="closeBanner()">✕</button>
+  </div>
+
+  <h1>📄 PDF Traduttore <span class="badge">⚡ VELOCE</span></h1>
+  <p class="sub">EN → IT · traduzione parallela · immagini intatte</p>
+
+  <div class="card">
+    <h2>1 — PDF da tradurre</h2>
+    <div class="drop" id="drop">
+      <input type="file" id="fi" accept=".pdf" capture="">
+      <p>📂 Tocca per scegliere il PDF</p>
+      <span>Solo .pdf · qualsiasi dimensione</span>
+      <span class="ios-hint">💡 Su iPhone: usa "File" o "iCloud Drive"</span>
+    </div>
+    <div class="fbadge" id="fb">
+      <span>📕</span>
+      <span class="name" id="fname"></span>
+      <span class="sz" id="fsize"></span>
+      <button onclick="clearF()">✕</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2 — Servizio di traduzione</h2>
+    <div class="api-row" id="apiRow">
+      <div class="api-opt sel" data-api="google" onclick="selApi(this)">🔴 Google</div>
+      <div class="api-opt" data-api="mymemory" onclick="selApi(this)">🌐 MyMemory</div>
+      <div class="api-opt" data-api="lingva" onclick="selApi(this)">🔷 Lingva</div>
+    </div>
+    <div class="api-note" id="apiNote">Google: più veloce, nessun limite — consigliato</div>
+
+    <div class="speed-row">
+      <label>⚡ Worker paralleli</label>
+      <input type="range" id="concSlider" min="1" max="20" value="8" oninput="updConc()">
+      <span class="speed-val" id="concVal">8</span>
+    </div>
+    <div class="speed-row" style="margin-top:8px;border-top:none;padding-top:0">
+      <label>📦 Righe per batch</label>
+      <input type="range" id="batchSlider" min="1" max="30" value="10" oninput="updBatch()">
+      <span class="speed-val" id="batchVal">10</span>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:14px;font-size:13px;cursor:pointer;color:var(--muted);min-height:36px">
+      <input type="checkbox" id="chkDbg" style="width:16px;height:16px"> Mostra debug
+    </label>
+  </div>
+
+  <div class="card">
+    <h2>3 — Traduci</h2>
+    <button class="go" id="goBtn" disabled onclick="run()">
+      <span id="goIco">🔒</span><span id="goTxt">Seleziona prima un PDF</span>
+    </button>
+
+    <div class="prog-wrap" id="pw">
+      <div style="height:10px"></div>
+      <div class="stats-bar">
+        <div class="stat"><div class="sv" id="sTot">0</div><div class="sl">totali</div></div>
+        <div class="stat"><div class="sv" id="sDone">0</div><div class="sl">tradotte</div></div>
+        <div class="stat"><div class="sv" id="sSpeed">—</div><div class="sl">riga/sec</div></div>
+      </div>
+      <div class="prog-track"><div class="prog-fill" id="pf"></div></div>
+      <div class="prog-meta"><span id="plbl">...</span><b id="ppct">0%</b></div>
+      <div class="log" id="log"></div>
+      <div class="dbg" id="dbg"></div>
+    </div>
+
+    <div class="result" id="res">
+      <div class="ico">✅</div>
+      <h3>Traduzione completata!</h3>
+      <p id="resub"></p>
+      <button class="dl" id="dlBtn">⬇ Scarica PDF Italiano</button>
+      <button class="reset" onclick="resetAll()">↩ Traduci un altro PDF</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="cv"></canvas>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script>
+/* ── Service Worker ── */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+/* ── iOS install banner ── */
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+if(isIOS && !isStandalone && !localStorage.getItem('banner-dismissed')){
+  document.getElementById('installBanner').classList.add('show');
+}
+function closeBanner(){
+  document.getElementById('installBanner').classList.remove('show');
+  localStorage.setItem('banner-dismissed','1');
+}
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let FILE = null, API = 'google', CONCURRENCY = 8, BATCH_SIZE = 10;
+const API_NOTES = {
+  google:   'Google: più veloce, nessun limite — consigliato',
+  mymemory: 'MyMemory: ~5000 parole/giorno gratis',
+  lingva:   'Lingva: istanza pubblica, nessun limite dichiarato'
+};
+
+/* ── file ── */
+const drop=document.getElementById('drop'), fi=document.getElementById('fi');
+drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over')});
+drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');pick(e.dataTransfer.files[0])});
+fi.addEventListener('change',e=>pick(e.target.files[0]));
+
+function pick(f){
+  if(!f||!f.name.toLowerCase().endsWith('.pdf')){alert('Seleziona un file .pdf');return}
+  FILE=f;
+  document.getElementById('fname').textContent=f.name;
+  document.getElementById('fsize').textContent=(f.size/1024/1024).toFixed(2)+' MB';
+  document.getElementById('fb').classList.add('on');
+  document.getElementById('goBtn').disabled=false;
+  document.getElementById('goIco').textContent='🚀';
+  document.getElementById('goTxt').textContent='Traduci in Italiano';
+  document.getElementById('res').classList.remove('on');
+  document.getElementById('pw').classList.remove('on');
+}
+function clearF(){FILE=null;fi.value='';document.getElementById('fb').classList.remove('on');document.getElementById('goBtn').disabled=true;document.getElementById('goIco').textContent='🔒';document.getElementById('goTxt').textContent='Seleziona prima un PDF'}
+function resetAll(){clearF();document.getElementById('res').classList.remove('on');document.getElementById('pw').classList.remove('on');document.getElementById('log').innerHTML='';document.getElementById('dbg').innerHTML='';prog(0,'...')}
+
+function selApi(el){document.querySelectorAll('.api-opt').forEach(e=>e.classList.remove('sel'));el.classList.add('sel');API=el.dataset.api;document.getElementById('apiNote').textContent=API_NOTES[API]}
+function updConc(){CONCURRENCY=+document.getElementById('concSlider').value;document.getElementById('concVal').textContent=CONCURRENCY}
+function updBatch(){BATCH_SIZE=+document.getElementById('batchSlider').value;document.getElementById('batchVal').textContent=BATCH_SIZE}
+
+function prog(p,l){document.getElementById('pf').style.width=p+'%';document.getElementById('ppct').textContent=Math.round(p)+'%';if(l!=null)document.getElementById('plbl').textContent=l}
+let _lid=0;
+function L(msg,st='on'){const box=document.getElementById('log');const id='l'+(++_lid);const d=document.createElement('div');d.className='lr '+st;d.id=id;d.innerHTML='<span class="ld"></span><span>'+escH(msg)+'</span>';box.appendChild(d);box.scrollTop=box.scrollHeight;return id}
+function Lu(id,msg,st){const e=document.getElementById(id);if(!e)return;e.className='lr '+st;e.querySelector('span:last-child').textContent=msg}
+function dbg(msg,cls=''){if(!document.getElementById('chkDbg').checked)return;document.getElementById('dbg').classList.add('on');const d=document.getElementById('dbg');d.innerHTML+='<div class="'+(cls||'')+'">'+escH(String(msg))+'</div>';d.scrollTop=d.scrollHeight}
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+let _statDone=0,_statTot=0,_statStart=0;
+function statUpdate(done,tot){
+  _statDone=done;_statTot=tot;
+  document.getElementById('sDone').textContent=done;
+  document.getElementById('sTot').textContent=tot;
+  if(_statStart&&done>0){
+    const el=(Date.now()-_statStart)/1000;
+    document.getElementById('sSpeed').textContent=(done/el).toFixed(1);
+  }
+}
+
+/* ── translation backends ── */
+async function translateGoogle(text){
+  const r=await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=it&dt=t&q='+encodeURIComponent(text));
+  if(!r.ok)throw new Error('Google '+r.status);
+  const j=await r.json();
+  return j[0]?.map(a=>a[0]||'').join('')||'';
+}
+async function translateMyMemory(text){
+  const r=await fetch('https://api.mymemory.translated.net/get?q='+encodeURIComponent(text)+'&langpair=en%7Cit');
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const j=await r.json();
+  if(j.responseStatus===429)throw new Error('RATE_LIMIT');
+  if(j.responseStatus!==200||!j.responseData?.translatedText)throw new Error('bad response');
+  return j.responseData.translatedText;
+}
+async function translateLingva(text){
+  const r=await fetch('https://lingva.ml/api/v1/en/it/'+encodeURIComponent(text));
+  if(!r.ok)throw new Error('Lingva '+r.status);
+  const j=await r.json();
+  if(!j.translation)throw new Error('no translation');
+  return j.translation;
+}
+async function translateOne(text,api){
+  if(!text||text.trim().length<2)return text;
+  const t=text.trim();
+  try{
+    if(api==='google')   return await translateGoogle(t);
+    if(api==='mymemory') return await translateMyMemory(t);
+    if(api==='lingva')   return await translateLingva(t);
+    return t;
+  }catch(e){
+    dbg('⚠ '+api+': '+e.message,'r');
+    const fallbacks=['google','mymemory','lingva'].filter(x=>x!==api);
+    for(const fb of fallbacks){
+      try{
+        if(fb==='google')   return await translateGoogle(t);
+        if(fb==='mymemory') return await translateMyMemory(t);
+        if(fb==='lingva')   return await translateLingva(t);
+      }catch(e2){dbg('⚠ '+fb+': '+e2.message,'r')}
+    }
+    return t;
+  }
+}
+async function translateChunked(text,api){
+  if(!text||text.trim().length<2)return text;
+  const words=text.trim().split(/\s+/);
+  const chunks=[];let cur='';
+  for(const w of words){const try_=cur?cur+' '+w:w;if(try_.length>400){if(cur)chunks.push(cur);cur=w}else cur=try_}
+  if(cur)chunks.push(cur);
+  if(chunks.length===0)return text;
+  const parts=await Promise.all(chunks.map(c=>translateOne(c,api)));
+  return parts.join(' ');
+}
+
+/* ── concurrent map ── */
+async function concurrentMap(items,fn,onProgress){
+  const results=new Array(items.length);
+  let nextIdx=0,done=0;
+  async function worker(){
+    while(true){
+      const idx=nextIdx++;
+      if(idx>=items.length)break;
+      try{results[idx]=await fn(items[idx],idx)}
+      catch(e){results[idx]=items[idx];dbg('worker err '+idx+': '+e.message,'r')}
+      done++;
+      if(onProgress)onProgress(done,items.length);
+    }
+  }
+  const workers=[];
+  for(let i=0;i<Math.min(CONCURRENCY,items.length);i++)workers.push(worker());
+  await Promise.all(workers);
+  return results;
+}
+
+/* ── line grouping ── */
+function groupLines(items){
+  const TOL=2;
+  const valid=items.filter(i=>i.str&&i.transform&&i.transform.length===6);
+  if(!valid.length)return[];
+  valid.sort((a,b)=>{const dy=b.transform[5]-a.transform[5];if(Math.abs(dy)>TOL)return dy;return a.transform[4]-b.transform[4]});
+  const lines=[];let cur=[],cy=null;
+  for(const it of valid){const y=it.transform[5];if(cy===null||Math.abs(y-cy)<=TOL){cur.push(it);cy=y}else{if(cur.length)lines.push(cur);cur=[it];cy=y}}
+  if(cur.length)lines.push(cur);
+  return lines;
+}
+const SKIP_RE=/^[\d\s\.\,\!\?\-\_\(\)\[\]\{\}\/\\:;@#$%^&*+=<>~`'"|\u2022\u2013\u2014\u00b7\u2019\u2018\u00a9\u00ae\u2122]+$/;
+
+/* ══ MAIN ══ */
+async function run(){
+  if(!FILE)return;
+  const btn=document.getElementById('goBtn');
+  btn.disabled=true;
+  document.getElementById('goTxt').textContent='In corso…';
+  document.getElementById('pw').classList.add('on');
+  document.getElementById('res').classList.remove('on');
+  document.getElementById('log').innerHTML='';
+  document.getElementById('dbg').innerHTML='';
+  prog(0,'Avvio…');
+  _statStart=Date.now();statUpdate(0,0);
+  const SCALE=2.5,api=API;
+  try{
+    /* 1 apri */
+    let lid=L('Apertura PDF…');
+    const buf=await FILE.arrayBuffer();
+    const pdfjs=await pdfjsLib.getDocument({data:new Uint8Array(buf),password:'',verbosity:0}).promise;
+    const N=pdfjs.numPages;
+    Lu(lid,`PDF aperto — ${N} pagine`,'ok');prog(4);
+
+    /* 2 estrai */
+    lid=L('Estrazione testo…');
+    const pageData=[];
+    for(let i=1;i<=N;i++){
+      const pg=await pdfjs.getPage(i);
+      const vp1=pg.getViewport({scale:1});
+      const tc=await pg.getTextContent({includeMarkedContent:false,normalizeWhitespace:true});
+      pageData.push({pg,vp1,items:tc.items});
+      prog(4+(i/N)*6,`Estrazione ${i}/${N}`);
+    }
+    Lu(lid,'Testo estratto','ok');prog(10);
+
+    /* 3 raccolta righe */
+    lid=L('Raccolta righe…');
+    const pageLines=pageData.map(p=>groupLines(p.items));
+    const umap=new Map();
+    for(const ls of pageLines)for(const line of ls){const s=line.map(i=>i.str).join(' ').trim();if(s.length>=2&&!SKIP_RE.test(s)&&!umap.has(s))umap.set(s,null)}
+    const total=umap.size;
+    Lu(lid,`${total} righe uniche`,'ok');statUpdate(0,total);prog(12);
+
+    /* 4 traduzione parallela */
+    lid=L(`⚡ Traduzione parallela (${CONCURRENCY} worker)…`);
+    const keys=[...umap.keys()];
+    const batches=[];for(let i=0;i<keys.length;i+=BATCH_SIZE)batches.push(keys.slice(i,i+BATCH_SIZE));
+    const allTr=await concurrentMap(
+      batches,
+      async(batch)=>{
+        const combined=batch.join(' ||| ');
+        let tc;
+        try{tc=await translateChunked(combined,api)}
+        catch(e){return await Promise.all(batch.map(b=>translateOne(b,api)))}
+        const parts=tc.split(/\s*\|\|\|\s*/);
+        if(parts.length!==batch.length)return await Promise.all(batch.map(b=>translateOne(b,api)));
+        return parts;
+      },
+      (done,tot)=>{
+        const dr=Math.min(done*BATCH_SIZE,total);
+        statUpdate(dr,total);
+        prog(12+(done/tot)*53,`Batch ${done}/${tot}`);
+      }
+    );
+    let bIdx=0;
+    for(const tr of allTr){const batch=batches[bIdx++];for(let i=0;i<batch.length;i++)umap.set(batch[i],tr[i]||batch[i])}
+    statUpdate(total,total);
+    Lu(lid,`${total} righe tradotte ✓`,'ok');prog(65);
+
+    /* 5 rendering */
+    lid=L('Rendering pagine…');
+    const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+    const jpegs=[];
+    for(let i=0;i<N;i++){
+      const{pg,vp1}=pageData[i];
+      const vp=pg.getViewport({scale:SCALE});
+      cv.width=Math.round(vp.width);cv.height=Math.round(vp.height);
+      ctx.fillStyle='#fff';ctx.fillRect(0,0,cv.width,cv.height);
+      await pg.render({canvasContext:ctx,viewport:vp}).promise;
+      const PH=vp1.height;
+      for(const line of pageLines[i]){
+        const orig=line.map(it=>it.str).join(' ').trim();if(!orig)continue;
+        const translated=SKIP_RE.test(orig)||orig.length<2?orig:(umap.get(orig)||orig);
+        for(const it of line){
+          if(!it.str.trim()||!it.transform)continue;
+          const[a,,,,tx,ty]=it.transform;const fsz=Math.abs(a)||it.height||10;
+          const CX=tx*SCALE,CY=(PH-ty)*SCALE,IW=(it.width||fsz*0.6)*SCALE+2,IH=fsz*SCALE*1.35;
+          ctx.fillStyle='rgba(255,255,255,0.99)';ctx.fillRect(CX-1,CY-IH*0.8,IW+3,IH);
+        }
+        const ref=line[0];const[a,,,,tx0,ty0]=ref.transform;
+        const fsz=(Math.abs(a)||ref.height||10)*SCALE;
+        ctx.font=`${fsz}px Arial,Helvetica,sans-serif`;ctx.fillStyle='#000';ctx.textBaseline='alphabetic';
+        ctx.fillText(translated.replace(/[\x00-\x1f]/g,' ').trim(),tx0*SCALE,(PH-ty0)*SCALE,Math.max(10,cv.width-tx0*SCALE-10));
+      }
+      jpegs.push(cv.toDataURL('image/jpeg',0.92));
+      prog(65+(i+1)/N*22,`Rendering ${i+1}/${N}`);
+    }
+    Lu(lid,`${N} pagine renderizzate`,'ok');prog(87);
+
+    /* 6 assembla */
+    lid=L('Assemblaggio PDF…');
+    const{PDFDocument}=PDFLib,out=await PDFDocument.create();
+    for(let i=0;i<N;i++){
+      const{vp1}=pageData[i];
+      const ab=await fetch(jpegs[i]).then(r=>r.arrayBuffer());
+      const img=await out.embedJpg(ab);
+      const pg=out.addPage([vp1.width,vp1.height]);
+      pg.drawImage(img,{x:0,y:0,width:vp1.width,height:vp1.height});
+      prog(87+(i+1)/N*11);
+    }
+    Lu(lid,'PDF assemblato','ok');prog(99,'Salvataggio…');
+    const bytes=await out.save();prog(100,'Completato!');
+
+    const elapsed=((Date.now()-_statStart)/1000).toFixed(1);
+    const base=FILE.name.replace(/\.pdf$/i,'');
+    document.getElementById('resub').textContent=`"${base}_italiano.pdf" pronto · ${total} righe in ${elapsed}s`;
+    document.getElementById('dlBtn').onclick=()=>{
+      const blob=new Blob([bytes],{type:'application/pdf'});
+      const url=URL.createObjectURL(blob);
+      Object.assign(document.createElement('a'),{href:url,download:base+'_italiano.pdf'}).click();
+      setTimeout(()=>URL.revokeObjectURL(url),20000);
+    };
+    document.getElementById('res').classList.add('on');
+
+  }catch(e){L('✗ Errore: '+e.message,'er');dbg('STACK: '+e.stack,'r');console.error(e)}
+  btn.disabled=false;
+  document.getElementById('goTxt').textContent='Traduci in Italiano';
+}
+</script>
+</body>
+</html>
